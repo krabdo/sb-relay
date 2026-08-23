@@ -57,10 +57,10 @@ STATE_FILE=/data/state.json
 
 如果你有网络可以到连接烧饼论坛和 Telegram 的 VPS，可以使用 Docker Compose 部署。
 
-编辑 `.env`：
-
 ```bash
+cd /opt
 git clone https://github.com/krabdo/sb-relay.git
+cd sb-relay
 nano .env
 ```
 
