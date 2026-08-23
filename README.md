@@ -36,7 +36,7 @@ Railway 是一个容器托管平台，提供 1$/月 的免费试用额度，这�
 2. 进入 Project 页面，点击 **+ New** 新建项目。
 3. 选择 **Docker Image**
 4. 填入 `ghcr.io/krabdo/sb-relay:latest`，回车。
-5. 点击 **Variable**，填写下面的内容：
+5. 点击 **Variable**，进入 **Raw Editor**，填写下面的内容：
 ```dotenv
 SB_USER_ID=<你的数字UID>
 SB_COOKIE='<你的Cookie>'
