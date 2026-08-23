@@ -2,6 +2,7 @@
 .github
 .env
 *.md
+!THIRD_PARTY_NOTICES.md
 LICENSE
 state.json
 /sb-relay
