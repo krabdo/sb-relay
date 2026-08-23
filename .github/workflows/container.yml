@@ -18,9 +18,10 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - run: go test ./...
+      - run: go test -race ./...
       - run: go vet ./...
-      - run: CGO_ENABLED=0 go build -trimpath ./cmd/sb-relay
+      - run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -o /tmp/sb-relay-amd64 ./cmd/sb-relay
+      - run: CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -o /tmp/sb-relay-arm64 ./cmd/sb-relay
 
   publish:
     needs: test
@@ -45,6 +46,7 @@ jobs:
           images: ghcr.io/krabdo/sb-relay
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=shoutrrr-preview,enable=${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/codex/shoutrrr' }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix=sha-

@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -25,11 +26,11 @@ func (f *fakeForum) FetchPage(_ context.Context, page int) (NotificationPage, er
 }
 
 type fakeSender struct {
-	messages []string
+	messages []OutboundMessage
 	fail     bool
 }
 
-func (s *fakeSender) Send(_ context.Context, message string) error {
+func (s *fakeSender) Send(_ context.Context, message OutboundMessage) error {
 	if s.fail {
 		return errors.New("send failed")
 	}
@@ -67,7 +68,7 @@ func TestFirstPollSendsOnlyLatestAndRestartDoesNotDuplicate(t *testing.T) {
 	if err := testApp(forum, sender, store).Poll(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if len(sender.messages) != 1 || !strings.Contains(sender.messages[0], "body new") {
+	if len(sender.messages) != 1 || !strings.Contains(sender.messages[0].PlainText, "body new") {
 		t.Fatalf("unexpected first-run messages: %#v", sender.messages)
 	}
 	if len(store.state.Seen) != 3 {
@@ -92,7 +93,7 @@ func TestRegularPollCollectsAcrossPagesOldestFirst(t *testing.T) {
 	if err := testApp(forum, sender, store).Poll(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if len(sender.messages) != 3 || !strings.Contains(sender.messages[0], "body c") || !strings.Contains(sender.messages[2], "body a") {
+	if len(sender.messages) != 3 || !strings.Contains(sender.messages[0].PlainText, "body c") || !strings.Contains(sender.messages[2].PlainText, "body a") {
 		t.Fatalf("wrong delivery order: %#v", sender.messages)
 	}
 	if len(forum.calls) != 2 {
@@ -109,6 +110,27 @@ func TestSendFailureDoesNotMarkNotificationSeen(t *testing.T) {
 	}
 	if len(store.state.Seen) != 1 || store.state.Seen[0] != "known" {
 		t.Fatalf("failed notification was marked seen: %#v", store.state.Seen)
+	}
+}
+
+func TestPartialShoutrrrSuccessPersistsAndDoesNotResend(t *testing.T) {
+	forum := &fakeForum{pages: map[int]NotificationPage{1: {Notifications: []Notification{note("new", "回复"), note("known", "回复")}}}}
+	store := &memoryStore{exists: true, state: State{Version: stateVersion, Seen: []string{"known"}}}
+	sender := testShoutrrrSender(&bytes.Buffer{},
+		shoutrrrDestination{index: 1, scheme: "telegram", router: &fakeDestinationRouter{errs: []error{errors.New("failed")}}},
+		shoutrrrDestination{index: 2, scheme: "logger", router: &fakeDestinationRouter{errs: []error{nil}}},
+	)
+	if err := testApp(forum, sender, store).Poll(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(store.state.Seen) != 2 || store.state.Seen[0] != "known" || store.state.Seen[1] != "new" {
+		t.Fatalf("partial success was not persisted: %#v", store.state.Seen)
+	}
+	if err := testApp(forum, sender, store).Poll(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(store.state.Seen) != 2 {
+		t.Fatalf("notification was re-added after restart: %#v", store.state.Seen)
 	}
 }
 

@@ -196,12 +196,7 @@ func (a *App) sendOperationalAlert(ctx context.Context, cause error) {
 	if !a.lastAlert.IsZero() && time.Since(a.lastAlert) < alertInterval {
 		return
 	}
-	message := "<b>⚠️ sb-relay 抓取失败</b>\n\n"
-	if errors.Is(cause, ErrAuthentication) {
-		message += "烧饼论坛登录 Cookie 已失效或无权访问，请更新 SB_COOKIE 后重启容器。"
-	} else {
-		message += "烧饼论坛通知页结构可能已经变化，请检查容器日志并升级 sb-relay。"
-	}
+	message := FormatOperationalAlert(errors.Is(cause, ErrAuthentication))
 	if err := a.sender.Send(ctx, message); err != nil {
 		a.logger.Printf("failed to send operational alert: %v", err)
 		return

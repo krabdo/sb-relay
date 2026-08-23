@@ -31,12 +31,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("forum client error: %v", err)
 	}
-	telegram, err := relay.NewTelegramClient("https://api.telegram.org", cfg.TelegramBotToken, cfg.TelegramChatID, cfg.HTTPTimeout)
+	sender, err := relay.NewShoutrrrSender(cfg.ShoutrrrURLs, cfg.HTTPTimeout, log.Default())
 	if err != nil {
-		log.Fatalf("telegram client error: %v", err)
+		log.Fatalf("Shoutrrr sender error: %v", err)
 	}
 
-	app := relay.NewApp(forum, telegram, relay.NewFileStateStore(cfg.StateFile), relay.AppOptions{
+	app := relay.NewApp(forum, sender, relay.NewFileStateStore(cfg.StateFile), relay.AppOptions{
 		PollInterval: cfg.PollInterval,
 		MaxPages:     10,
 		MaxSeen:      2048,

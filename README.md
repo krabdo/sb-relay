@@ -1,106 +1,135 @@
 # sb-relay
 
-一个使用 Go 的轻量烧饼论坛（sb.sb）通知转发器。
+一个使用 Go 的轻量烧饼论坛（sb.sb）通知转发器。通知通过
+[Shoutrrr v0.8.0](https://containrrr.dev/shoutrrr/v0.8/services/overview/)
+发送，可使用其全部稳定渠道以及通用 Webhook。
 
-## Features
+> 本分支是 Shoutrrr 预览版，镜像标签为
+> `ghcr.io/krabdo/sb-relay:shoutrrr-preview`；不会更新 `latest`。
 
-- 每 60 秒检查一次通知，可通过 `POLL_INTERVAL` 修改。
-- 首次启动会发送当前最新的一条通知。
-- 按通知 ID 去重，突发通知会跨页补抓并按从旧到新的顺序发送。
+## 功能
 
-## 部署
+- 默认每 60 秒检查一次通知，可通过 `POLL_INTERVAL` 修改。
+- 首次启动只发送当前最新的一条，其余当前通知作为去重基线。
+- 按通知 ID 去重，跨页补抓突发通知，并按从旧到新的顺序发送。
+- 多个目标并发发送；至少一个目标成功即将通知记为已发送。全部失败才在下轮重试。
+- Telegram 使用 HTML 富文本、关闭链接预览，并在正文内提供“查看原帖”链接。
+- 其他渠道使用纯文本，并通过 Shoutrrr `title` 参数设置标题。
 
-### 1. 准备 Telegram
+## 配置通知渠道
 
-1. 在 Telegram 中搜索 [@BotFather](https://t.me/BotFather)，创建机器人并取得 Bot Token。
-2. 再搜索 [@userinfobot](https://t.me/userinfobot)，获取自己的 Telegram ID。
+必须在下列两个变量中选择一个，不能同时设置：
 
-记得先与你的机器人开始聊天，以免收不到消息。
+- `SHOUTRRR_URLS`：一个或多个以空白分隔的 Shoutrrr 服务 URL。
+- `SHOUTRRR_URLS_FILE`：文件路径，文件中每行一个服务 URL，忽略空行。
 
-### 2. 取得 Cookie
+Telegram 示例：
+
+```dotenv
+SHOUTRRR_URLS='telegram://bot-id:bot-secret@telegram?chats=chat-id'
+```
+
+多个目标示例：
+
+```dotenv
+SHOUTRRR_URLS='telegram://bot-id:bot-secret@telegram?chats=chat-id discord://token@webhook-id'
+```
+
+URL 的完整写法请查阅
+[Shoutrrr 服务列表](https://containrrr.dev/shoutrrr/v0.8/services/overview/)。
+程序会强制 Telegram 目标使用 `parseMode=HTML` 和 `preview=No`，即使 URL 中指定了其他值。
+
+服务 URL 通常包含令牌、密码或 Webhook 密钥：
+
+- 在 Railway/Compose 中给整个值加引号。
+- 使用平台 Secret 或只读挂载文件注入，不要提交到仓库。
+- 程序不会在日志中输出服务 URL；投递错误仅显示目标序号、scheme 和脱敏原因。
+
+旧版的 `TELEGRAM_BOT_TOKEN` 和 `TELEGRAM_CHAT_ID` 已删除，单独配置它们无法启动。
+
+## 取得论坛 Cookie
 
 1. 桌面浏览器登录 [烧饼论坛](https://sb.sb/)，打开自己的“通知”页面。
-2. 按 `F12`，打开浏览器开发者工具的 **Network/网络** 面板并刷新页面。
-3. 选择**类型**为 `Document` 的请求，在 **Request Headers/请求标头** 中复制 `Cookie` 的完整值。你应该会得到这样的内容：
+2. 按 `F12`，打开开发者工具的 **Network/网络** 面板并刷新页面。
+3. 选择类型为 `Document` 的请求，在 **Request Headers/请求标头** 中复制
+   `Cookie` 的完整值，但不要复制 `Cookie:` 前缀。
+
+示例仅展示格式，不是真实凭据：
+
+```text
+__Host-bbs_csrf=replace-me; __Host-bbs_session=replace-me
 ```
-__Host-bbs_csrf=***; __Host-bbs_session=***; bbs_recent_forums=***; bbs_viewed=***
-```
 
-### 3.1 在 Railway 上部署（⭐️推荐）
+Cookie 失效后更新 `SB_COOKIE` 并重启容器。程序只对论坛执行 GET，不会清空或标记通知。
 
-#### 一键部署：
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/sb-relay-1?referralCode=pjiwS3&utm_medium=integration&utm_source=template&utm_campaign=generic)
+## Railway 部署
 
-Railway 是一个容器托管平台，提供 1$/月 的免费试用额度，这个服务常驻内存占用不到 10MB，可以放心在上面 7x24 小时运行。
+1. 在 Railway 创建项目，选择 **Docker Image**。
+2. 预览阶段填入 `ghcr.io/krabdo/sb-relay:shoutrrr-preview`。
+3. 在 **Variables / Raw Editor** 中配置：
 
-#### 手动部署：
-1. 注册 [Railway](https://railway.com?referralCode=MKpszV)（Aff）
-2. 进入 Project 页面，点击 **+ New** 新建项目。
-3. 选择 **Docker Image**
-4. 填入 `ghcr.io/krabdo/sb-relay:latest`，回车。
-5. 点击 **Variable**，进入 **Raw Editor**，填写下面的内容：
 ```dotenv
-SB_USER_ID=<你的数字UID>
-SB_COOKIE='<你的Cookie>'
-TELEGRAM_BOT_TOKEN=
-TELEGRAM_CHAT_ID=
+SB_USER_ID=<你的数字 UID>
+SB_COOKIE='<你的完整 Cookie>'
+SHOUTRRR_URLS='telegram://bot-id:bot-secret@telegram?chats=chat-id'
 
 POLL_INTERVAL=60s
 STATE_FILE=/data/state.json
 ```
-- 请参考下一节 **配置** 填写缺失参数。
-6. 点击 **Deploy** 按钮。
 
-正常情况下，你就能在 Telegram 里收到你的最后一条通知了。
+4. 为 `/data` 添加持久卷，否则容器重建后会重新建立基线并再次发送最新一条。
+5. 部署并在日志中确认 `sb-relay started`。
 
-如果你不想在容器重启时，会重复收到最后一条消息，请添加持久卷。
-
-### 3.2 Docker Compose 部署
-
-如果你有网络可以到连接烧饼论坛和 Telegram 的 VPS，可以使用 Docker Compose 部署。
+## Docker Compose 部署
 
 ```bash
-cd /opt
-git clone https://github.com/krabdo/sb-relay.git
+git clone --branch codex/shoutrrr https://github.com/krabdo/sb-relay.git
 cd sb-relay
-nano .env
-```
-
-写入下面的内容：
-
-```dotenv
-SB_USER_ID=<你的数字UID>
-SB_COOKIE='<你的Cookie>'
-TELEGRAM_BOT_TOKEN=
-TELEGRAM_CHAT_ID=
-
-POLL_INTERVAL=60s
-STATE_FILE=/data/state.json
-```
-
-```bash
+cp .env.example .env
+# 编辑 .env，替换全部示例值
 docker compose pull
 docker compose up -d
 docker compose logs -f sb-relay
 ```
 
-## 配置
+若使用文件 Secret，可不设置 `SHOUTRRR_URLS`，改为把文件只读挂载到容器并设置：
+
+```dotenv
+SHOUTRRR_URLS_FILE=/run/secrets/shoutrrr_urls
+```
+
+文件中每行一个 URL。两种来源同时出现、文件为空、URL 重复、scheme 未知或配置无效时，
+程序会在启动阶段退出。
+
+## 配置参考
 
 | 环境变量 | 必填 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `SB_USER_ID` | 是 | — | 论坛中的数字用户 ID |
 | `SB_COOKIE` | 是 | — | 完整 Cookie 值，不含 `Cookie:` 前缀 |
-| `TELEGRAM_BOT_TOKEN` | 是 | — | Telegram Bot Token |
-| `TELEGRAM_CHAT_ID` | 是 | — | 单个私聊、群组或频道 ID |
+| `SHOUTRRR_URLS` | 二选一 | — | 空白分隔的一个或多个服务 URL |
+| `SHOUTRRR_URLS_FILE` | 二选一 | — | 每行一个服务 URL 的 Secret 文件 |
 | `POLL_INTERVAL` | 否 | `60s` | Go duration 格式，最短 `10s` |
-| `STATE_FILE` | 否 | `/data/state.json` | 状态文件路径 |
+| `STATE_FILE` | 否 | `/data/state.json` | v1 `seen` 状态文件路径 |
+
+现有 `state.json` 不需要迁移或清空。
+
+## 投递语义
+
+每个 URL 对应一个独立 Shoutrrr sender，所有目标并发投递。至少一个目标成功后，
+通知 ID 会原子写入状态文件，失败目标不会单独补发；这样可以避免已成功渠道重复收到同一通知。
+如果全部目标失败，状态不会更新，程序会在下一轮重试该通知，并停止当前批次。
+
+所有消息按 UTF-8 字节安全截断到 3900 字节，不会切断中文字符或 Telegram HTML 实体。
+Shoutrrr 当前不提供可配置的 Telegram Inline Keyboard，因此“查看原帖”使用正文链接。
 
 ## 排障
 
-- `forum authentication failed`：Cookie 已过期、复制不完整或不属于 `SB_USER_ID`，更新 `.env` 后重启。
-- `forum notification page structure changed`：论坛页面结构发生变化；状态不会被覆盖，请升级程序或提交 issue。
-- `Telegram API error`：检查 Bot Token、chat ID、机器人在群组/频道中的权限及 Telegram 返回的错误说明。
-- `load persistent state` / `persist state`：检查命名卷权限与磁盘空间。程序会停止，避免无法去重时反复发送。
-- 新通知很多时，程序最多向后检查 10 页；找不到已知边界会在日志中给出警告并发送已收集的通知。
+- `forum authentication failed`：Cookie 已过期、复制不完整或不属于 `SB_USER_ID`。
+- `forum notification page structure changed`：论坛 HTML 结构变化；状态不会被覆盖。
+- `invalid Shoutrrr destination #...`：检查对应序号的 URL scheme、凭据格式和必填查询参数。
+- `all ... Shoutrrr destinations failed`：所有目标均投递失败；查看各目标序号和脱敏原因。
+- `load persistent state` / `persist state`：检查 `/data` 权限与磁盘空间。程序会停止以防重放。
 
-许可证：[Apache-2.0](LICENSE)
+项目许可证：[Apache-2.0](LICENSE)。Shoutrrr 及其 MIT 许可证归属见
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

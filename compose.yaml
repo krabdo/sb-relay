@@ -1,6 +1,6 @@
 services:
   sb-relay:
-    image: ghcr.io/krabdo/sb-relay:latest
+    image: ghcr.io/krabdo/sb-relay:shoutrrr-preview
     restart: unless-stopped
     env_file:
       - .env
