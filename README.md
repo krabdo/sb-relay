@@ -30,6 +30,8 @@ __Host-bbs_csrf=***; __Host-bbs_session=***; bbs_recent_forums=***; bbs_viewed=*
 
 *创建一键部署的 Railway Template 需要买他的 5$/M 的套餐，没办法了，只能给手动部署的教程。*
 
+Railway 是一个容器托管平台，提供 1$/月 的免费试用额度，这个服务常驻内存占用不到 10MB，可以放心在上面 7x24 小时运行。
+
 1. 注册 [Railway](https://railway.com?referralCode=MKpszV)（Aff）
 2. 进入 Project 页面，点击 **+ New** 新建项目。
 3. 选择 **Docker Image**
