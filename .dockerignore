@@ -1,0 +1,8 @@
+.git
+.github
+.env
+*.md
+LICENSE
+state.json
+/sb-relay
+/sb-relay.exe
