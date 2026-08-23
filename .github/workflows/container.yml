@@ -43,7 +43,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ghcr.io/krabdo/sb-relay
+          images: ghcr.io/krabdo/sb-relay-shoutrrr
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value=shoutrrr-preview,enable=${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/codex/shoutrrr' }}
