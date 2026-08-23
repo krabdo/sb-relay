@@ -5,7 +5,7 @@
 发送，可使用其全部稳定渠道以及通用 Webhook。
 
 > 本分支是 Shoutrrr 预览版，镜像标签为
-> `ghcr.io/krabdo/sb-relay-shoutrrr:shoutrrr-preview`；不会更新 `latest`。
+> `ghcr.io/krabdo/sb-relay-shoutrrr:shoutrrr-preview`
 
 ## 功能
 
@@ -64,6 +64,8 @@ Cookie 失效后更新 `SB_COOKIE` 并重启容器。程序只对论坛执行 GE
 
 ## Railway 部署
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/sb-relay-shoutrrr?referralCode=pjiwS3&utm_medium=integration&utm_source=template&utm_campaign=generic)
+
 1. 在 Railway 创建项目，选择 **Docker Image**。
 2. 预览阶段填入 `ghcr.io/krabdo/sb-relay-shoutrrr:shoutrrr-preview`。
 3. 在 **Variables / Raw Editor** 中配置：
@@ -77,7 +79,7 @@ POLL_INTERVAL=60s
 STATE_FILE=/data/state.json
 ```
 
-4. 为 `/data` 添加持久卷，否则容器重建后会重新建立基线并再次发送最新一条。
+4. （可选）为 `/data` 添加持久卷，否则容器重建后会重新建立基线并再次发送最新一条。
 5. 部署并在日志中确认 `sb-relay started`。
 
 ## Docker Compose 部署
