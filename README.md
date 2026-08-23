@@ -29,7 +29,7 @@ __Host-bbs_csrf=***; __Host-bbs_session=***; bbs_recent_forums=***; bbs_viewed=*
 ### 3.1 在 Railway 上部署（⭐️推荐）
 
 #### 一键部署：
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/sb-relay?referralCode=pjiwS3&utm_medium=integration&utm_source=template&utm_campaign=generic)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/sb-relay-1?referralCode=pjiwS3&utm_medium=integration&utm_source=template&utm_campaign=generic)
 
 Railway 是一个容器托管平台，提供 1$/月 的免费试用额度，这个服务常驻内存占用不到 10MB，可以放心在上面 7x24 小时运行。
 
