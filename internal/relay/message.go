@@ -23,7 +23,10 @@ func FormatNotification(n Notification) OutboundMessage {
 	if n.Actor != "" {
 		header += " · " + escapeWithinBytes(n.Actor, 256)
 	}
-	footer := "\n\n<a href=\"" + escapeWithinBytes(n.TargetURL, 1200) + "\">查看原帖</a>"
+	footer := ""
+	if n.TargetURL != "" {
+		footer = "\n\n<a href=\"" + escapeWithinBytes(n.TargetURL, 1200) + "\">查看原帖</a>"
+	}
 	htmlBudget := maxMessageBytes - len(header) - len(footer) - 2
 	telegramHTML := header + "\n\n" + escapeWithinBytes(n.Content, htmlBudget) + footer
 
@@ -31,7 +34,10 @@ func FormatNotification(n Notification) OutboundMessage {
 	if n.Actor != "" {
 		plainHeader += " · " + truncateUTF8Bytes(n.Actor, 256)
 	}
-	plainFooter := "\n\n查看原帖：" + truncateUTF8Bytes(n.TargetURL, 1200)
+	plainFooter := ""
+	if n.TargetURL != "" {
+		plainFooter = "\n\n查看原帖：" + truncateUTF8Bytes(n.TargetURL, 1200)
+	}
 	plainBudget := maxMessageBytes - len(plainHeader) - len(plainFooter) - 2
 	plain := plainHeader + "\n\n" + truncateUTF8Bytes(n.Content, plainBudget) + plainFooter
 	return OutboundMessage{Title: truncateUTF8Bytes(title, 256), PlainText: plain, TelegramHTML: telegramHTML}

@@ -60,6 +60,19 @@ func TestParseNotificationPageAllowsMissingTopic(t *testing.T) {
 	}
 }
 
+func TestParseNotificationPageAllowsMissingTarget(t *testing.T) {
+	base, _ := url.Parse("https://sb.sb")
+	html := strings.Replace(fixturePage, `  <a class="notification-reply-action" href="/events/abc">查看</a>`, "", 1)
+	page, err := ParseNotificationPage(strings.NewReader(html), base, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := page.Notifications[1]
+	if n.TargetURL != "" || !strings.HasPrefix(n.ID, "hash:") {
+		t.Fatalf("unexpected linkless notification: %+v", n)
+	}
+}
+
 func TestParseNotificationPageRejectsLoginAndShapeChanges(t *testing.T) {
 	base, _ := url.Parse("https://sb.sb")
 	_, err := ParseNotificationPage(strings.NewReader(`<html><body><form action="/login/"></form></body></html>`), base, 1)

@@ -56,6 +56,15 @@ func TestFormatNotificationTruncatesChineseByBytes(t *testing.T) {
 	}
 }
 
+func TestFormatNotificationWithoutTargetOmitsLinks(t *testing.T) {
+	message := FormatNotification(Notification{Kind: "邀请", Actor: "用户", Content: "无目标链接的通知"})
+	for name, value := range map[string]string{"plain": message.PlainText, "telegram": message.TelegramHTML} {
+		if strings.Contains(value, "查看原帖") || strings.Contains(value, `href=""`) {
+			t.Fatalf("%s message contains an empty target link: %q", name, value)
+		}
+	}
+}
+
 func TestFormatOperationalAlertVariants(t *testing.T) {
 	auth := FormatOperationalAlert(true)
 	structure := FormatOperationalAlert(false)
