@@ -13,7 +13,10 @@ func FormatNotification(n Notification) string {
 	if n.Actor != "" {
 		header += " · " + html.EscapeString(n.Actor)
 	}
-	footer := "\n\n<a href=\"" + html.EscapeString(n.TargetURL) + "\">查看原帖</a>"
+	footer := ""
+	if n.TargetURL != "" {
+		footer = "\n\n<a href=\"" + html.EscapeString(n.TargetURL) + "\">查看原帖</a>"
+	}
 	budget := maxTelegramMessageRunes - utf8.RuneCountInString(header) - utf8.RuneCountInString(footer) - 2
 	content := escapeWithin(n.Content, budget)
 	return header + "\n\n" + content + footer

@@ -26,3 +26,10 @@ func TestFormatNotificationEscapesAndTruncates(t *testing.T) {
 		t.Fatal("expected truncation marker")
 	}
 }
+
+func TestFormatNotificationWithoutTargetOmitsLink(t *testing.T) {
+	message := FormatNotification(Notification{Kind: "邀请", Actor: "用户", Content: "无目标链接的通知"})
+	if strings.Contains(message, "查看原帖") || strings.Contains(message, `href=""`) {
+		t.Fatalf("message contains an empty target link: %q", message)
+	}
+}
